@@ -1,5 +1,5 @@
 [package]
-name = "New-OS"
+name = "The-Silent-Watcher"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,7 @@ edition = "2021"
 bootloader = "0.9.8"
 volatile = "0.2.6"
 spin = "0.5.2"
+# core2 = "0.4.0"
 
 [dependencies.lazy_static]
 version = "1.0"

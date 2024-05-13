@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "New-OS"
+name = "The-Silent-Watcher"
 version = "0.1.0"
 dependencies = [
  "bootloader",
