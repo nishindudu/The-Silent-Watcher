@@ -1,2 +1,2 @@
 # The Silent Watcher Kernel
-### This experimental kernel is just a learning project exploring operating system kernels.
+### An experimental learning project exploring operating system kernels.
