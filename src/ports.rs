@@ -1,5 +1,7 @@
 use core::{arch::asm, marker::PhantomData};
 
+// use crate::vga_buffers;
+
 #[allow(dead_code)]
 
 // use x86_64::instructions::port::{PortReadOnly, PortWriteOnly};
@@ -11,14 +13,16 @@ use core::{arch::asm, marker::PhantomData};
 } */
 
 pub unsafe fn outb(value: u8, port: u16) {
-    asm!("outb %al, %dx", in("al") value, in("dx") port);
+    // asm!("outb %al, %dx", in("al") value, in("dx") port);
+    asm!("out dx, al", in("al") value, in("dx") port);
+    // asm!("out %al, %dx", in("al") value, in("dx") port);
 }
 
 pub unsafe fn inb(port: u16) -> u8 {
     let result: u8;
-    // asm!("inb dx, al", inout("dx") port, lateout("al") result);
-    // asm!("inb %dx, %al" : "={al}"(result) : "{dx}"(port));
+    // write!(vga_buffers::WRITER.lock(), "Getting data from port\n").unwrap();
     asm!("in al, dx", out("al") result, in("dx") port);
+    // write!(vga_buffers::WRITER.lock(), "Got data from port\n").unwrap();
     result
 }
 
