@@ -1,5 +1,4 @@
-use crate::{keyboard, ports, vga_buffers};
-use core::fmt::Write;
+use crate::ports;
 // use pc_keyboard::{self, layouts, Keyboard, ScancodeSet1};
 
 use spin::Mutex;
@@ -9,8 +8,8 @@ pub fn init_keyboard() -> Result<u8, u8> {
     let mut retry_count: u8 = 0;
 
     loop {
-        send_data_to_keyboard(0xAA, None);
-        write!(vga_buffers::WRITER.lock(), "Writing 0xAA to keyboard\n").unwrap();
+        send_data_to_keyboard(Some(0xAA), None);
+        // write!(vga_buffers::WRITER.lock(), "Writing 0xAA to keyboard\n").unwrap();
 
         if read_keyboard_data() == 0xFC {
             retry_count += 1;
@@ -21,18 +20,25 @@ pub fn init_keyboard() -> Result<u8, u8> {
         }
 
         if read_keyboard_data() == 0x55 {
+            set_keyboard_repeat();
             return Ok(0);
         }
     }
     Err(1)
 }
 
+fn set_keyboard_repeat() {
+    send_data_to_keyboard(Some(0xAD), None);
+    send_data_to_keyboard(None, Some(0xF3));
+    send_data_to_keyboard(None, Some(0x5F));
+}
+
 fn reset_keyboard() -> () {
     {
         let mut retry_count: u8 = 0;
         loop {
-            send_data_to_keyboard(0xFF, None);
-            write!(vga_buffers::WRITER.lock(), "Writing 0xFF (reset) to keyboard\n").unwrap();
+            send_data_to_keyboard(Some(0xFF), None);
+            // write!(vga_buffers::WRITER.lock(), "Writing 0xFF (reset) to keyboard\n").unwrap();
 
             if read_keyboard_data() == 0xFA {
                 break;
@@ -47,7 +53,7 @@ fn reset_keyboard() -> () {
     {
         let mut retry_count: u8 = 0;
         loop{
-            send_data_to_keyboard(0xF0, Some(1));
+            send_data_to_keyboard(Some(0xF0), Some(1));
             if read_keyboard_data() == 0xFA {
                 break;
             }
@@ -59,8 +65,8 @@ fn reset_keyboard() -> () {
     }
 }
 
-fn send_data_to_keyboard(command: u8, data: Option<u8>) {
-    write!(vga_buffers::WRITER.lock(), "Writing data to keyboard\n").unwrap();
+fn send_data_to_keyboard(command: Option<u8>, data: Option<u8>) {
+    // write!(vga_buffers::WRITER.lock(), "Writing data to keyboard\n").unwrap();
     static COMMAND_PORT: Mutex<ports::Port<u8>> = Mutex::new(unsafe {
         ports::Port::new(0x64)
     });
@@ -72,21 +78,19 @@ fn send_data_to_keyboard(command: u8, data: Option<u8>) {
     });
     
     loop {
-        {
-            if STATUS_REG.lock().read() != 0{
-                let mut keyboard = COMMAND_PORT.lock();
-                keyboard.write(0);
-            }
-        }
-        if STATUS_REG.lock().read() == 0{
+        let status = (STATUS_REG.lock().read() >> 1) & 1;
+        if status == 0{
             {
                 let mut keyboard = COMMAND_PORT.lock();
-                keyboard.write(command);
+                match command {
+                    Some(c) => {keyboard.write(c);},
+                    None => {},
+                }
             }
 
             {
                 let mut data_port = DATA_PORT.lock();
-                match data{
+                match data {
                     Some(c) => {data_port.write(c);},
                     None => {},
                 }
@@ -94,7 +98,7 @@ fn send_data_to_keyboard(command: u8, data: Option<u8>) {
             break;
         }
     }
-    write!(vga_buffers::WRITER.lock(), "Writing data to keyboard completed\n").unwrap();
+    // write!(vga_buffers::WRITER.lock(), "Writing data to keyboard completed\n").unwrap();
 }
 
 fn read_keyboard_data() -> u8 {
@@ -145,9 +149,8 @@ pub unsafe fn scancode_to_ascii(scancode: u8) -> Option<char> {
         0x15 => Some('y'),
         0x16 => Some('u'),
         0x17 => Some('i'),
-        0x18 => Some('i'),
-        0x19 => Some('o'),
-        0x20 => Some('p'),
+        0x18 => Some('o'),
+        0x19 => Some('p'),
         0x1A => Some('['),
         0x1B => Some(']'),
         0x1C => Some('\n'),
